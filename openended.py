@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Load YOLOv8 model from local path
-MODEL_PATH = r"C:\Users\Hp\Downloads\yolov8n.pt"
+MODEL_PATH = "yolov8n.pt"
 model = YOLO(MODEL_PATH)
 
 # Map YOLO classes → your categories
