@@ -15,7 +15,7 @@ CORS(app)
 # =========================
 # Load YOLO model
 # =========================
-MODEL_PATH = "C://Users//Hp//Desktop//best.pt"
+MODEL_PATH = "best.pt"
 model = YOLO(MODEL_PATH)
 
 CLASS_NAMES = [
