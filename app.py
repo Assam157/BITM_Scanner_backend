@@ -1,60 +1,79 @@
 import cv2
-import torch
 import base64
 import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from ultralytics import YOLO
 
-from ultralytics import YOLO  # YOLOv8 import
-
-# Flask
+# ============================
+# Flask Setup
+# ============================
 app = Flask(__name__)
 CORS(app)
 
-# Load YOLOv8 model from local path
-MODEL_PATH = "yolov8n.pt"
+# ============================
+# Load your YOLOv8 model from GitHub repo
+# Render will read best.pt directly.
+# ============================
+MODEL_PATH = "best.pt"   # file in your repo
 model = YOLO(MODEL_PATH)
 
-# Map YOLO classes → your categories
+# ============================
+# Component class names (same as training)
+# ============================
+CLASS_NAMES = [
+    "ceramic-capacitor",
+    "diode",
+    "electrolytic-capacitor",
+    "polyester-capacitor",
+    "resistor",
+    "transistor"
+]
+
+# ============================
+# Mapping to ID
+# ============================
 CLASS_MAP = {
-    "cell phone": 1,  # Resistor
-    "person": 0,      # Capacitor
-    "mouse": 2        # Transducer
+    "ceramic-capacitor": 0,
+    "diode": 1,
+    "electrolytic-capacitor": 2,
+    "polyester-capacitor": 3,
+    "resistor": 4,
+    "transistor": 5
 }
 
 @app.route("/")
 def home():
-    return "Scanner YOLO backend (YOLOv8)"
+    return "YOLOv8 Electronic Component Detector (Render Deployed)"
+
 
 @app.route("/detect_frame", methods=["POST"])
 def detect_frame():
     data = request.json["frame"]
 
-    # Remove data:image/png;base64,
     encoded = data.split(",")[1]
-
-    # Decode base64 → image
     img_bytes = base64.b64decode(encoded)
+
     np_arr = np.frombuffer(img_bytes, np.uint8)
     frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-    # YOLOv8 detect
-    results = model(frame)[0]  # YOLO outputs a list → take index 0
+    # Run YOLOv8 inference
+    results = model(frame, verbose=False)[0]
 
     detected_value = -1
     box_list = []
 
-    # Loop detections
     for box in results.boxes:
         cls_id = int(box.cls[0])
         conf = float(box.conf[0])
+        name = CLASS_NAMES[cls_id]
 
-        name = model.names[cls_id]
         x1, y1, x2, y2 = map(float, box.xyxy[0])
+        mapped_id = CLASS_MAP.get(name, -1)
 
         box_list.append({
             "class": name,
-            "mapped": CLASS_MAP.get(name, -1),
+            "mapped": mapped_id,
             "conf": conf,
             "x1": x1,
             "y1": y1,
@@ -62,14 +81,15 @@ def detect_frame():
             "y2": y2
         })
 
-        if name in CLASS_MAP and detected_value == -1:
-            detected_value = CLASS_MAP[name]
+        if detected_value == -1:
+            detected_value = mapped_id
 
     return jsonify({
         "detected": detected_value,
         "boxes": box_list
     })
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=False)
 
+# Gunicorn will run this
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5001)
