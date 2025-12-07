@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Load YOLO model
-MODEL_PATH = "yolov8n.pt"
+MODEL_PATH = "best.pt"
 model = YOLO(MODEL_PATH)
 
 CLASS_NAMES = [
