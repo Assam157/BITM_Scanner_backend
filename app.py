@@ -15,7 +15,7 @@ CORS(app)
 # Load your YOLOv8 model from GitHub repo
 # Render will read best.pt directly.
 # ============================
-MODEL_PATH = "best.pt"   # file in your repo
+MODEL_PATH = "yolov8n.pt"   # file in your repo
 model = YOLO(MODEL_PATH)
 
 # ============================
